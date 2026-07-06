@@ -1,27 +1,18 @@
-import MessageList from "../components/MessageList";
 import Link from "next/link";
-import Parentsprops from "../components/Greeting";
-import Sidebar from "../components/Sidebar";
-function Home() {
-    return (
-        <main>
-            <h1>Next.js Components Practice</h1>
 
-            <MessageList />
-         <Link href="/login">
-        Login
-      </Link>
+export default function Home() {
+  return (
+    <main>
+      <h1>Full Stack Project</h1>
 
-      <br />
+      <p>Welcome to my Next.js + Django Project</p>
 
-      <Link href="/dashboard">
-        Dashboard
-      </Link>
-      
-      <Parentsprops />
-        <Sidebar />
-        </main>
-    );
+      <ul>
+        <li><Link href="/practice">Stage 1 - Practice</Link></li>
+        <li><Link href="/projects">Projects</Link></li>
+        <li><Link href="/login">Login</Link></li>
+        <li><Link href="/dashboard">Dashboard</Link></li>
+      </ul>
+    </main>
+  );
 }
-
-export default Home;
