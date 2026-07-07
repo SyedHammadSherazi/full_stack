@@ -1,16 +1,15 @@
 from django.db import models
+from Workspace.models import Workspace
 
-# Create your models here.
+
 class Note(models.Model):
     workspace = models.ForeignKey(
         Workspace,
         on_delete=models.CASCADE,
         related_name="notes"
     )
-
     title = models.CharField(max_length=200)
     content = models.TextField(blank=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -24,9 +23,7 @@ class NoteVersion(models.Model):
         on_delete=models.CASCADE,
         related_name="versions"
     )
-
     content = models.TextField()
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
