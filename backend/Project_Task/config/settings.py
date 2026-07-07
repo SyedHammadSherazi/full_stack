@@ -48,7 +48,8 @@ INSTALLED_APPS = [
     "corsheaders",
 
     "Projects",
-    "Chat"
+    "Chat",
+    "Workspace",
 ]
 
 MIDDLEWARE = [
