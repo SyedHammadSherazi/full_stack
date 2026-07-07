@@ -1,0 +1,57 @@
+List three features that genuinely need WebSockets vs three that don't.
+
+
+
+Features that Need WebSockets
+
+ Real-time communication 
+
+1. Live Chat Application
+
+Example: WhatsApp, Facebook Messenger, 
+
+Reason:
+When one user sends a message, it should be delivered to the other user instantly without requiring a page refresh.
+
+
+2. Live Notifications
+
+Example: Facebook notifications, Instagram likes, LinkedIn notifications
+
+Reason:
+As soon as the server generates a new notification, it instantly sends it to the browser.
+
+
+3. Live Dashboard / Stock Market 
+
+Example: Binance, TradingView, 
+
+Reason:
+Prices change every second, so the data is updated continuously.
+
+
+Features that DO NOT Need WebSockets
+It easily handel from HTTP Request/Response
+
+1. User Login
+
+Example: Login Form
+
+Reason:
+The user sends a single request and receives a single response.
+
+
+2. Fetch Project List
+
+Example: Project Management Dashboard
+
+Reason:
+Projects are loaded only when the page is opened or refreshed.
+
+
+3. User Profile Update
+
+Example: Change Name, Email, Password
+
+Reason
+The user clicks the Save button once, and the server returns a response. A continuous connection is not required.
