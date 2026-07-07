@@ -22,7 +22,7 @@ export default function LoginForm() {
             // Token save karo
             localStorage.setItem("access", data.access);
             localStorage.setItem("refresh", data.refresh);
-
+            localStorage.setItem("username", username);
             console.log("Login Successful");
             console.log(data);
 

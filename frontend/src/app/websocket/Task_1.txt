@@ -1,5 +1,5 @@
 Explain in your own words how a WebSocket differs from a normal HTTP request.
-HTTP Request
+##HTTP Request
 
 HTTP follows a request-response model. The client sends a request to the server, the server processes it, returns a response, and then the connection is closed. If the client needs updated information, it must send another request.
 
@@ -9,7 +9,8 @@ User Login
 Fetch Projects
 Update Profile
 Submit Form
-WebSocket
+
+##WebSocket
 
 A WebSocket creates a always open connection between the client and the server. After the connection is established, both the client and the server can send messages to each other at any time without creating a new connection.
 
