@@ -5,10 +5,19 @@ import { useEffect, useRef, useState } from "react";
 export default function ChatPage() {
 
     const [messages, setMessages] = useState([]);
-    const [message, setMessage] = useState("");
+    const [message, setMessage] = useState([]);
+
+    // Online users
+    const [onlineUsers, setOnlineUsers] = useState([]);
 
     const socketRef = useRef(null);
+    const presenceSocketRef = useRef(null);
 
+    const workspaceId = 1;
+
+    // ----------------------------
+    // Chat Socket
+    // ----------------------------
     useEffect(() => {
 
         socketRef.current = new WebSocket(
@@ -16,25 +25,92 @@ export default function ChatPage() {
         );
 
         socketRef.current.onopen = () => {
-            console.log("✅ Connected");
+            console.log("✅ Chat Connected");
         };
 
         socketRef.current.onmessage = (event) => {
+
             const data = JSON.parse(event.data);
 
             setMessages((prev) => [...prev, data]);
+
         };
 
         socketRef.current.onclose = () => {
-            console.log("❌ Disconnected");
+            console.log("❌ Chat Disconnected");
         };
 
         return () => {
-            socketRef.current.close();
+
+            if (socketRef.current) {
+                socketRef.current.close();
+            }
+
         };
 
     }, []);
 
+    // ----------------------------
+    // Presence Socket
+    // ----------------------------
+    useEffect(() => {
+
+        const token = localStorage.getItem("access");
+
+        if (!token) return;
+
+        presenceSocketRef.current = new WebSocket(
+            `ws://127.0.0.1:8000/ws/workspace/${workspaceId}/?token=${token}`
+        );
+
+        presenceSocketRef.current.onopen = () => {
+            console.log("✅ Presence Connected");
+        };
+
+        presenceSocketRef.current.onmessage = (event) => {
+
+            const data = JSON.parse(event.data);
+
+            if (data.type === "presence") {
+
+                setOnlineUsers((prev) => {
+
+                    const users = [...prev];
+
+                    const index = users.findIndex(
+                        (u) => u.user === data.user
+                    );
+
+                    if (index !== -1) {
+                        users[index] = data;
+                    } else {
+                        users.push(data);
+                    }
+
+                    return users;
+                });
+
+            }
+
+        };
+
+        presenceSocketRef.current.onclose = () => {
+            console.log("❌ Presence Disconnected");
+        };
+
+        return () => {
+
+            if (presenceSocketRef.current) {
+                presenceSocketRef.current.close();
+            }
+
+        };
+
+    }, []);
+
+    // ----------------------------
+    // Send Chat Message
+    // ----------------------------
     const sendMessage = () => {
 
         const username = localStorage.getItem("username");
@@ -49,40 +125,101 @@ export default function ChatPage() {
         );
 
         setMessage("");
+
     };
 
     return (
-        <div>
 
-            <h1>Real-Time Chat</h1>
+        <div
+            style={{
+                display: "flex",
+                gap: "30px",
+                padding: "20px",
+            }}
+        >
+
+            {/* Chat */}
 
             <div
                 style={{
-                    border: "1px solid #ccc",
-                    padding: "10px",
-                    height: "300px",
-                    overflowY: "auto",
-                    marginBottom: "20px",
+                    flex: 3,
                 }}
             >
-                {messages.map((msg, index) => (
-                    <p key={index}>
-                        <strong>{msg.sender}</strong>: {msg.message}
-                    </p>
-                ))}
+
+                <h1>Real-Time Chat</h1>
+
+                <div
+                    style={{
+                        border: "1px solid #ccc",
+                        padding: "10px",
+                        height: "300px",
+                        overflowY: "auto",
+                        marginBottom: "20px",
+                    }}
+                >
+
+                    {messages.map((msg, index) => (
+
+                        <p key={index}>
+                            <strong>{msg.sender}</strong> : {msg.message}
+                        </p>
+
+                    ))}
+
+                </div>
+
+                <input
+                    type="text"
+                    placeholder="Type your message..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                />
+
+                <button onClick={sendMessage}>
+                    Send
+                </button>
+
             </div>
 
-            <input
-                type="text"
-                placeholder="Type your message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-            />
+            {/* Online Users */}
 
-            <button onClick={sendMessage}>
-                Send
-            </button>
+            <div
+                style={{
+                    flex: 1,
+                    border: "1px solid #ccc",
+                    padding: "15px",
+                    minHeight: "350px",
+                }}
+            >
+
+                <h2>Online Users</h2>
+
+                {onlineUsers.length === 0 ? (
+
+                    <p>No Users</p>
+
+                ) : (
+
+                    onlineUsers.map((user) => (
+
+                        <p key={user.user}>
+
+                            {user.status === "online"
+                                ? "🟢"
+                                : "🔴"}{" "}
+
+                            {user.user}
+
+                        </p>
+
+                    ))
+
+                )}
+
+            </div>
 
         </div>
+
     );
+
 }

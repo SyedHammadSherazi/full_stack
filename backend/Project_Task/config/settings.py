@@ -50,7 +50,9 @@ INSTALLED_APPS = [
     "Projects",
     "Chat",
     "Workspace",
-    "Notes"
+    "Notes",
+    
+    "accounts"
 ]
 
 MIDDLEWARE = [

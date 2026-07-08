@@ -34,3 +34,37 @@ class Membership(models.Model):
 
     def __str__(self):
         return f"{self.user.username} in {self.workspace.name} ({self.role})"
+
+class Presence(models.Model):
+    STATUS_CHOICES = [
+        ("online", "Online"),
+        ("offline", "Offline"),
+    ]
+
+    workspace = models.ForeignKey(
+        Workspace,
+        on_delete=models.CASCADE,
+        related_name="presences",
+    )
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="presences",
+    )
+
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default="offline",
+    )
+
+    connected_at = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("workspace", "user")
+        ordering = ["-last_seen"]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.workspace.name} ({self.status})"

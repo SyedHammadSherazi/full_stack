@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 
 from .models import Workspace, Membership
+from .serializers import PresenceSerializer
+from .services import get_online_users
 from Notes.models import Note
 
 
@@ -44,3 +46,25 @@ class WorkspaceNotesAPIView(APIView):
             {"id": note.id, "title": note.title, "content": note.content},
             status=status.HTTP_201_CREATED,
         )
+
+
+class WorkspacePresenceAPIView(APIView):
+    """
+    GET: Return all online users in a workspace.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, workspace_id):
+        workspace = get_object_or_404(Workspace, id=workspace_id)
+
+        # Sirf workspace members hi presence dekh sakte hain
+        if not workspace.memberships.filter(user=request.user).exists():
+            return Response(
+                {"error": "Aap is workspace ke member nahi"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        online_users = get_online_users(workspace)
+        serializer = PresenceSerializer(online_users, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

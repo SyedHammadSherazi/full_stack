@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Workspace, Membership
+from .models import Workspace, Membership, Presence
 
 
 class MembershipInline(admin.TabularInline):
@@ -18,3 +18,25 @@ class WorkspaceAdmin(admin.ModelAdmin):
 class MembershipAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "workspace", "role", "joined_at")
     list_filter = ("role",)
+    search_fields = ("user__username", "workspace__name")
+
+
+@admin.register(Presence)
+class PresenceAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "workspace",
+        "status",
+        "connected_at",
+        "last_seen",
+    )
+    list_filter = (
+        "status",
+        "workspace",
+    )
+    search_fields = (
+        "user__username",
+        "workspace__name",
+    )
+    ordering = ("-last_seen",)
