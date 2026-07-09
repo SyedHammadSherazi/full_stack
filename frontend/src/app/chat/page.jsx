@@ -1,27 +1,75 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
+import NotificationBell from "../../components/NotificationBell";
 export default function ChatPage() {
 
-    const [messages, setMessages] = useState([]);
-    const [message, setMessage] = useState([]);
+    const [workspaces, setWorkspaces] = useState([]);
+    const [selectedWorkspace, setSelectedWorkspace] = useState(null);
 
-    // Online users
+    const [messages, setMessages] = useState([]);
+    const [message, setMessage] = useState("");
+
     const [onlineUsers, setOnlineUsers] = useState([]);
 
     const socketRef = useRef(null);
     const presenceSocketRef = useRef(null);
 
-    const workspaceId = 1;
-
-    // ----------------------------
-    // Chat Socket
-    // ----------------------------
+    // -------------------------------------
+    // Load Workspaces
+    // -------------------------------------
     useEffect(() => {
 
+        async function loadWorkspaces() {
+
+            const token = localStorage.getItem("access");
+
+            if (!token) return;
+
+            try {
+
+                const response = await fetch(
+                    "http://127.0.0.1:8000/api/workspaces/",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const data = await response.json();
+
+                setWorkspaces(data);
+
+                if (data.length > 0) {
+                    setSelectedWorkspace(data[0]);
+                }
+
+            } catch (err) {
+                console.error(err);
+            }
+
+        }
+
+        loadWorkspaces();
+
+    }, []);
+
+    // -------------------------------------
+    // Chat Socket
+    // -------------------------------------
+    useEffect(() => {
+
+        if (!selectedWorkspace) return;
+
+        setMessages([]);
+
+        if (socketRef.current) {
+            socketRef.current.close();
+        }
+
         socketRef.current = new WebSocket(
-            "ws://127.0.0.1:8000/ws/chat/general/"
+            `ws://127.0.0.1:8000/ws/chat/${selectedWorkspace.id}/`
         );
 
         socketRef.current.onopen = () => {
@@ -40,6 +88,10 @@ export default function ChatPage() {
             console.log("❌ Chat Disconnected");
         };
 
+        socketRef.current.onerror = (err) => {
+            console.error(err);
+        };
+
         return () => {
 
             if (socketRef.current) {
@@ -48,19 +100,27 @@ export default function ChatPage() {
 
         };
 
-    }, []);
+    }, [selectedWorkspace]);
 
-    // ----------------------------
+    // -------------------------------------
     // Presence Socket
-    // ----------------------------
+    // -------------------------------------
     useEffect(() => {
+
+        if (!selectedWorkspace) return;
 
         const token = localStorage.getItem("access");
 
         if (!token) return;
 
+        setOnlineUsers([]);
+
+        if (presenceSocketRef.current) {
+            presenceSocketRef.current.close();
+        }
+
         presenceSocketRef.current = new WebSocket(
-            `ws://127.0.0.1:8000/ws/workspace/${workspaceId}/?token=${token}`
+            `ws://127.0.0.1:8000/ws/workspace/${selectedWorkspace.id}/?token=${token}`
         );
 
         presenceSocketRef.current.onopen = () => {
@@ -88,6 +148,7 @@ export default function ChatPage() {
                     }
 
                     return users;
+
                 });
 
             }
@@ -98,6 +159,10 @@ export default function ChatPage() {
             console.log("❌ Presence Disconnected");
         };
 
+        presenceSocketRef.current.onerror = (err) => {
+            console.error(err);
+        };
+
         return () => {
 
             if (presenceSocketRef.current) {
@@ -106,25 +171,32 @@ export default function ChatPage() {
 
         };
 
-    }, []);
+    }, [selectedWorkspace]);
 
-    // ----------------------------
-    // Send Chat Message
-    // ----------------------------
+    // -------------------------------------
+    // Send Message
+    // -------------------------------------
     const sendMessage = () => {
 
         const username = localStorage.getItem("username");
 
         if (!message.trim()) return;
 
-        socketRef.current.send(
-            JSON.stringify({
-                sender: username,
-                message: message,
-            })
-        );
+        if (
+            socketRef.current &&
+            socketRef.current.readyState === WebSocket.OPEN
+        ) {
 
-        setMessage("");
+            socketRef.current.send(
+                JSON.stringify({
+                    sender: username,
+                    message: message,
+                })
+            );
+
+            setMessage("");
+
+        }
 
     };
 
@@ -133,90 +205,148 @@ export default function ChatPage() {
         <div
             style={{
                 display: "flex",
-                gap: "30px",
-                padding: "20px",
+                height: "100vh",
             }}
         >
+
+            {/* Workspace Sidebar */}
+
+            <div
+                style={{
+                    width: "250px",
+                    borderRight: "1px solid #ccc",
+                    padding: "20px",
+                }}
+            >
+
+                <h2>Workspaces</h2>
+
+                {
+                    workspaces.map((workspace) => (
+
+                        <button
+                            key={workspace.id}
+                            onClick={() => setSelectedWorkspace(workspace)}
+                            style={{
+                                width: "100%",
+                                padding: "10px",
+                                marginBottom: "10px",
+                                cursor: "pointer",
+                                background:
+                                    selectedWorkspace?.id === workspace.id
+                                        ? "#ddd"
+                                        : "#fff",
+                            }}
+                        >
+                            {workspace.name}
+                        </button>
+
+                    ))
+                }
+
+            </div>
 
             {/* Chat */}
 
             <div
                 style={{
                     flex: 3,
+                    padding: "20px",
                 }}
             >
 
-                <h1>Real-Time Chat</h1>
+                <h1>
+                    {selectedWorkspace
+                        ? selectedWorkspace.name
+                        : "Select Workspace"}
+                </h1>
 
                 <div
                     style={{
                         border: "1px solid #ccc",
                         padding: "10px",
-                        height: "300px",
+                        height: "350px",
                         overflowY: "auto",
                         marginBottom: "20px",
                     }}
                 >
 
-                    {messages.map((msg, index) => (
+                    {
+                        messages.map((msg, index) => (
 
-                        <p key={index}>
-                            <strong>{msg.sender}</strong> : {msg.message}
-                        </p>
+                            <p key={index}>
+                                <strong>{msg.sender}</strong> : {msg.message}
+                            </p>
 
-                    ))}
+                        ))
+                    }
 
                 </div>
 
                 <input
                     type="text"
-                    placeholder="Type your message..."
                     value={message}
+                    placeholder="Type your message..."
                     onChange={(e) => setMessage(e.target.value)}
                 />
 
-                <button onClick={sendMessage}>
+                <button
+                    onClick={sendMessage}
+                    style={{
+                        marginLeft: "10px",
+                    }}
+                >
                     Send
                 </button>
 
             </div>
 
-            {/* Online Users */}
+            {/* Presence */}
 
             <div
                 style={{
-                    flex: 1,
-                    border: "1px solid #ccc",
-                    padding: "15px",
-                    minHeight: "350px",
+                    width: "250px",
+                    borderLeft: "1px solid #ccc",
+                    padding: "20px",
                 }}
             >
 
                 <h2>Online Users</h2>
 
-                {onlineUsers.length === 0 ? (
+                {
+                    onlineUsers.length === 0
+                        ? (
+                            <p>No Users Online</p>
+                        )
+                        : (
+                            onlineUsers.map((user) => (
 
-                    <p>No Users</p>
+                                <p key={user.user}>
 
-                ) : (
+                                    {
+                                        user.status === "online"
+                                            ? "🟢"
+                                            : "🔴"
+                                    }
 
-                    onlineUsers.map((user) => (
+                                    {" "}
 
-                        <p key={user.user}>
+                                    {user.user}
 
-                            {user.status === "online"
-                                ? "🟢"
-                                : "🔴"}{" "}
+                                </p>
 
-                            {user.user}
-
-                        </p>
-
-                    ))
-
-                )}
+                            ))
+                        )
+                }
 
             </div>
+            <div
+    style={{
+        marginTop: "30px",
+    }}
+>
+    <NotificationBell />
+</div>
 
         </div>
 

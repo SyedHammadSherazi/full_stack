@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Presence
-
+from .models import Workspace
 
 class PresenceSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
@@ -15,3 +15,13 @@ class PresenceSerializer(serializers.ModelSerializer):
             "connected_at",
             "last_seen",
         ]
+
+class WorkspaceSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Workspace
+        fields = [
+            "id",
+            "name",
+            "created_at",
+        ]                

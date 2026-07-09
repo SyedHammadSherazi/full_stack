@@ -52,7 +52,9 @@ INSTALLED_APPS = [
     "Workspace",
     "Notes",
     
-    "accounts"
+    "accounts",
+    "Notifications",
+    "Files"
 ]
 
 MIDDLEWARE = [
@@ -154,3 +156,5 @@ CHANNEL_LAYERS = {
         },
     },
 }
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

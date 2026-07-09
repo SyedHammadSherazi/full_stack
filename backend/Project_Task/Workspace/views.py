@@ -8,7 +8,7 @@ from .models import Workspace, Membership
 from .serializers import PresenceSerializer
 from .services import get_online_users
 from Notes.models import Note
-
+from .serializers import WorkspaceSerializer
 
 class WorkspaceNotesAPIView(APIView):
     """GET: workspace ke saare notes list karo | POST: naya note banao"""
@@ -68,3 +68,21 @@ class WorkspacePresenceAPIView(APIView):
         serializer = PresenceSerializer(online_users, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class WorkspaceListAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        workspaces = Workspace.objects.filter(
+            memberships__user=request.user
+        ).distinct()
+
+        serializer = WorkspaceSerializer(
+            workspaces,
+            many=True,
+        )
+
+        return Response(serializer.data)

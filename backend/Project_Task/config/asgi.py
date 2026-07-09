@@ -13,7 +13,9 @@ from Notes.routing import websocket_urlpatterns as notes_websocket_urlpatterns
 from Workspace.routing import websocket_urlpatterns as workspace_websocket_urlpatterns
 
 from accounts.websocket_auth import JwtAuthMiddlewareStack
-
+from Notifications.routing import (
+    websocket_urlpatterns as notification_websocket_urlpatterns,
+)
 django_asgi_app = get_asgi_application()
 
 application = ProtocolTypeRouter({
@@ -28,7 +30,7 @@ application = ProtocolTypeRouter({
             + project_websocket_urlpatterns
             + notes_websocket_urlpatterns
             + workspace_websocket_urlpatterns
-
+            + notification_websocket_urlpatterns
         )
 
     ),

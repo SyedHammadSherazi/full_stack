@@ -1,3 +1,32 @@
 from django.contrib import admin
+from .models import Notification
 
-# Register your models here.
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "id",
+        "recipient",
+        "sender",
+        "workspace",
+        "notification_type",
+        "is_read",
+        "created_at",
+    )
+
+    list_filter = (
+        "notification_type",
+        "is_read",
+        "workspace",
+    )
+
+    search_fields = (
+        "recipient__username",
+        "sender__username",
+        "title",
+    )
+
+    ordering = (
+        "-created_at",
+    )
