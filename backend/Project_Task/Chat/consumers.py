@@ -1,16 +1,15 @@
 import json
 
-from channels.generic.websocket import AsyncWebsocketConsumer
+from asgiref.sync import async_to_sync
 from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.layers import get_channel_layer
 
 from django.contrib.auth.models import User
 
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
-
 from .models import Message
-from Workspace.models import Workspace
 from Notifications.services import create_notification
+from Workspace.models import Workspace
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -18,7 +17,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
 
         self.workspace_id = self.scope["url_route"]["kwargs"]["workspace_id"]
-
         self.room_group_name = f"chat_{self.workspace_id}"
 
         await self.channel_layer.group_add(
@@ -32,13 +30,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         for message in messages:
 
-            await self.send(
-                text_data=json.dumps({
-                    "sender": message.sender,
-                    "message": message.content,
-                    "history": True,
-                })
-            )
+            if message.message_type == "file":
+
+                await self.send(
+                    text_data=json.dumps({
+                        "type": "file",
+                        "sender": message.sender,
+                        "file_name": message.file_name,
+                        "file_url": message.file_url,
+                        "history": True,
+                    })
+                )
+
+            else:
+
+                await self.send(
+                    text_data=json.dumps({
+                        "sender": message.sender,
+                        "message": message.content,
+                        "history": True,
+                    })
+                )
 
     async def disconnect(self, close_code):
 
@@ -138,13 +150,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             message,
         )
 
-        # Notify other workspace members
+        # Notify workspace members
         await self.notify_workspace_members(
             sender,
             message,
         )
 
-        # Broadcast chat message
+        # Broadcast message
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -160,5 +172,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             text_data=json.dumps({
                 "sender": event["sender"],
                 "message": event["message"],
+            })
+        )
+
+    async def file_message(self, event):
+
+        await self.send(
+            text_data=json.dumps({
+                "type": "file",
+                "sender": event["sender"],
+                "file_name": event["file_name"],
+                "file_url": event["file_url"],
             })
         )

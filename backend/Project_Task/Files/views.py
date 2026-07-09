@@ -5,8 +5,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
+from Chat.models import Message
 from Workspace.models import Workspace
 from .models import WorkspaceFile
+
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 @api_view(["GET", "POST"])
@@ -57,11 +61,39 @@ def upload_file(request, workspace_id):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    # Save uploaded file
     new_file = WorkspaceFile.objects.create(
         workspace=workspace,
         uploaded_by=request.user,
         file=uploaded_file,
         original_name=uploaded_file.name
+    )
+
+    # File URL
+    file_url = request.build_absolute_uri(
+        new_file.file.url
+    )
+
+    # Save file as chat message
+    Message.objects.create(
+        sender=request.user.username,
+        room=str(workspace.id),
+        message_type="file",
+        file_name=new_file.original_name,
+        file_url=file_url,
+    )
+
+    # Send realtime message to chat
+    channel_layer = get_channel_layer()
+
+    async_to_sync(channel_layer.group_send)(
+        f"chat_{workspace.id}",
+        {
+            "type": "file_message",
+            "sender": request.user.username,
+            "file_name": new_file.original_name,
+            "file_url": file_url,
+        }
     )
 
     return Response(
@@ -71,7 +103,7 @@ def upload_file(request, workspace_id):
             "file": {
                 "id": new_file.id,
                 "original_name": new_file.original_name,
-                "file_url": request.build_absolute_uri(new_file.file.url),
+                "file_url": file_url,
                 "uploaded_by": new_file.uploaded_by.username,
                 "uploaded_at": new_file.uploaded_at,
             }
