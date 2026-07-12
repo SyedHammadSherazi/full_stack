@@ -46,6 +46,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
                 await self.send(
                     text_data=json.dumps({
+                        "type": "text",
                         "sender": message.sender,
                         "message": message.content,
                         "history": True,
@@ -65,6 +66,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         Message.objects.create(
             sender=sender,
             room=str(self.workspace_id),
+            message_type="text",
             content=content,
         )
 
@@ -74,89 +76,63 @@ class ChatConsumer(AsyncWebsocketConsumer):
         messages = (
             Message.objects
             .filter(room=str(self.workspace_id))
-            .order_by("-timestamp")[:20]
+            .order_by("-timestamp")[:50]
         )
 
         return list(reversed(messages))
 
     @database_sync_to_async
-    def notify_workspace_members(self, sender_username, message):
+    def notify_workspace_members(
+        self,
+        sender_username,
+        title,
+        notification_message,
+        notification_type="message",
+    ):
 
-        try:
+        workspace = Workspace.objects.get(
+            id=self.workspace_id
+        )
 
-            workspace = Workspace.objects.get(
-                id=self.workspace_id
+        sender = User.objects.get(
+            username=sender_username
+        )
+
+        memberships = workspace.memberships.select_related("user")
+
+        for membership in memberships:
+
+            if membership.user == sender:
+                continue
+
+            create_notification(
+                recipient=membership.user,
+                sender=sender,
+                workspace=workspace,
+                notification_type=notification_type,
+                title=title,
+                message=notification_message,
             )
-
-            sender = User.objects.get(
-                username=sender_username
-            )
-
-            channel_layer = get_channel_layer()
-
-            memberships = workspace.memberships.select_related("user")
-
-            for membership in memberships:
-
-                # Sender ko notification nahi bhejni
-                if membership.user == sender:
-                    continue
-
-                # Save notification in database
-                create_notification(
-                    recipient=membership.user,
-                    sender=sender,
-                    workspace=workspace,
-                    notification_type="message",
-                    title="New Chat Message",
-                    message=f"{sender.username}: {message}",
-                )
-
-                # Send realtime notification
-                async_to_sync(channel_layer.group_send)(
-                    f"notifications_{membership.user.id}",
-                    {
-                        "type": "notification_message",
-                        "title": "New Chat Message",
-                        "message": f"{sender.username}: {message}",
-                        "sender": sender.username,
-                        "workspace": workspace.name,
-                        "workspace_id": workspace.id,
-                    }
-                )
-
-        except Workspace.DoesNotExist:
-
-            print(f"Workspace {self.workspace_id} not found.")
-
-        except User.DoesNotExist:
-
-            print(f"User {sender_username} not found.")
-
-        except Exception as e:
-
-            print("Notification Error:", e)
 
     async def receive(self, text_data):
 
         data = json.loads(text_data)
 
-        message = data["message"]
-        sender = data.get("sender", "Anonymous")
+        sender = data.get("sender")
+        message = data.get("message")
 
-        # Save chat message
         await self.save_message(
             sender,
             message,
         )
 
-        # Notify workspace members
         await self.notify_workspace_members(
-            sender,
-            message,
+            sender_username=sender,
+            title="New Chat Message",
+            notification_message=f"{sender}: {message}",
+            notification_type="message",
         )
 
-        # Broadcast message
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -170,6 +146,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.send(
             text_data=json.dumps({
+                "type": "text",
                 "sender": event["sender"],
                 "message": event["message"],
             })

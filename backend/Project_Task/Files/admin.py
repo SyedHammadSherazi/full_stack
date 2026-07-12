@@ -5,6 +5,7 @@ from .models import WorkspaceFile
 @admin.register(WorkspaceFile)
 class WorkspaceFileAdmin(admin.ModelAdmin):
     list_display = [
+        "id",
         "original_name",
         "workspace",
         "uploaded_by",

@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class Message(models.Model):
 
     MESSAGE_TYPES = (
@@ -13,30 +12,34 @@ class Message(models.Model):
     room = models.CharField(max_length=100)
 
     message_type = models.CharField(
-        max_length=20,
+        max_length=10,
         choices=MESSAGE_TYPES,
         default="text",
     )
 
     content = models.TextField(
         blank=True,
+        null=True,
     )
 
     file_name = models.CharField(
         max_length=255,
         blank=True,
+        null=True,
     )
 
-    file_url = models.TextField(
+    file_url = models.URLField(
         blank=True,
+        null=True,
     )
 
-    timestamp = models.DateTimeField(
-        auto_now_add=True,
-    )
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["timestamp"]
 
     def __str__(self):
-        return f"{self.sender} ({self.message_type})"
+        if self.message_type == "file":
+            return f"{self.sender}: {self.file_name}"
+
+        return f"{self.sender}: {self.content}"

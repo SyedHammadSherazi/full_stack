@@ -1,13 +1,18 @@
 from django.urls import path
 from . import views
 
-
 urlpatterns = [
 
     path(
         "workspace/<int:workspace_id>/upload-file/",
         views.upload_file,
-        name="upload_file"
+        name="upload_file",
+    ),
+
+    path(
+        "download/<int:file_id>/",
+        views.download_file,
+        name="download_file",
     ),
 
 ]
