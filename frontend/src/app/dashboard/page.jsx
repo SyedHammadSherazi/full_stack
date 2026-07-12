@@ -13,13 +13,11 @@ export default function Dashboard() {
 
         const token = localStorage.getItem("access");
 
-        // Agar token nahi hai to login page par bhej do
         if (!token) {
             router.push("/login");
             return;
         }
 
-        // Logged-in user ka naam fetch karo
         fetch("http://127.0.0.1:8000/api/user/", {
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -35,28 +33,96 @@ export default function Dashboard() {
 
     }, [router]);
 
-    // Logout Function
     const handleLogout = () => {
 
         localStorage.removeItem("access");
         localStorage.removeItem("refresh");
+        localStorage.removeItem("username");
 
         router.push("/login");
     };
 
     return (
-        <div>
 
-            <h1>Dashboard</h1>
+        <div
+            style={{
+                minHeight: "100vh",
+                background: "#f5f5f5",
+            }}
+        >
 
-            <h2>Welcome, {username}</h2>
+            {/* Navbar */}
 
-            <br />
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "15px 40px",
+                    background: "#222",
+                    color: "#fff",
+                }}
+            >
 
-            <button onClick={handleLogout}>
-                Logout
-            </button>
+                <h2>
+                    Real-Time Collaboration
+                </h2>
+
+                <div
+                    style={{
+                        display: "flex",
+                        gap: "15px",
+                    }}
+                >
+
+                   
+
+                    <button
+                        onClick={() => router.push("/chat")}
+                    >
+                        💬 Chat
+                    </button>
+
+                    <button
+                        onClick={() => router.push("Notes")}
+                    >
+                        📝 Notes
+                    </button>
+
+                    <button
+                        onClick={handleLogout}
+                        style={{
+                            background: "red",
+                            color: "#fff",
+                        }}
+                    >
+                        🚪 Logout
+                    </button>
+
+                </div>
+
+            </div>
+
+            {/* Body */}
+
+            <div
+                style={{
+                    padding: "50px",
+                }}
+            >
+
+                <h1>
+                    Welcome, {username} 👋
+                </h1>
+
+                <p>
+                    Select any module from the navigation bar to continue.
+                </p>
+
+            </div>
 
         </div>
+
     );
+
 }
