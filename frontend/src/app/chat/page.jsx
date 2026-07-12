@@ -13,6 +13,8 @@ export default function ChatPage() {
     const [message, setMessage] = useState("");
 
     const [onlineUsers, setOnlineUsers] = useState([]);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isUsersOpen, setIsUsersOpen] = useState(false);
 
     const socketRef = useRef(null);
     const presenceSocketRef = useRef(null);
@@ -245,14 +247,93 @@ export default function ChatPage() {
 
     };
 
+    // ----------------------------------
+    // Close sidebars on outside click (mobile)
+    // ----------------------------------
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth > 768) {
+                setIsSidebarOpen(false);
+                setIsUsersOpen(false);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
 
         <div
             style={{
                 display: "flex",
                 height: "100vh",
+                position: "relative",
+                overflow: "hidden",
             }}
         >
+
+            {/* Mobile Menu Button */}
+
+            <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                style={{
+                    position: "fixed",
+                    top: 10,
+                    left: 10,
+                    zIndex: 1000,
+                    padding: "10px 15px",
+                    background: "#1976d2",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    display: window.innerWidth <= 768 ? "block" : "none",
+                    fontSize: "20px",
+                }}
+            >
+                ☰
+            </button>
+
+            {/* Mobile Users Button */}
+
+            <button
+                onClick={() => setIsUsersOpen(!isUsersOpen)}
+                style={{
+                    position: "fixed",
+                    top: 10,
+                    right: 10,
+                    zIndex: 1000,
+                    padding: "10px 15px",
+                    background: "#1976d2",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    display: window.innerWidth <= 768 ? "block" : "none",
+                    fontSize: "20px",
+                }}
+            >
+                👥
+            </button>
+
+            {/* Sidebar Overlay (Mobile) */}
+
+            {isSidebarOpen && window.innerWidth <= 768 && (
+                <div
+                    onClick={() => setIsSidebarOpen(false)}
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        zIndex: 998,
+                    }}
+                />
+            )}
 
             {/* Sidebar */}
 
@@ -261,19 +342,29 @@ export default function ChatPage() {
                     width: 250,
                     borderRight: "1px solid #ddd",
                     padding: 20,
+                    backgroundColor: "white",
+                    position: window.innerWidth <= 768 ? "fixed" : "relative",
+                    left: window.innerWidth <= 768 ? (isSidebarOpen ? 0 : "-300px") : 0,
+                    top: 0,
+                    bottom: 0,
+                    zIndex: 999,
+                    transition: "left 0.3s ease",
+                    overflowY: "auto",
+                    boxShadow: window.innerWidth <= 768 ? "2px 0 10px rgba(0,0,0,0.1)" : "none",
                 }}
             >
 
-                <h2>Workspaces</h2>
+                <h2 style={{ marginTop: window.innerWidth <= 768 ? 50 : 0 }}>Workspaces</h2>
 
                 {
                     workspaces.map(workspace => (
 
                         <button
                             key={workspace.id}
-                            onClick={() =>
-                                setSelectedWorkspace(workspace)
-                            }
+                            onClick={() => {
+                                setSelectedWorkspace(workspace);
+                                if (window.innerWidth <= 768) setIsSidebarOpen(false);
+                            }}
                             style={{
                                 width: "100%",
                                 padding: 10,
@@ -283,6 +374,9 @@ export default function ChatPage() {
                                     selectedWorkspace?.id === workspace.id
                                         ? "#ddd"
                                         : "#fff",
+                                border: "1px solid #ccc",
+                                borderRadius: 5,
+                                textAlign: "left",
                             }}
                         >
                             {workspace.name}
@@ -297,14 +391,22 @@ export default function ChatPage() {
 
             <div
                 style={{
-                    flex: 3,
-                    padding: 20,
+                    flex: 1,
+                    padding: window.innerWidth <= 768 ? "60px 15px 15px 15px" : "20px",
                     display: "flex",
                     flexDirection: "column",
+                    minWidth: 0,
+                    height: "100vh",
                 }}
             >
 
-                <h2>
+                <h2
+                    style={{
+                        fontSize: window.innerWidth <= 768 ? "1.2rem" : "1.5rem",
+                        marginBottom: 15,
+                        paddingTop: window.innerWidth <= 768 ? 0 : 0,
+                    }}
+                >
                     {
                         selectedWorkspace
                             ? selectedWorkspace.name
@@ -319,9 +421,10 @@ export default function ChatPage() {
                         flex: 1,
                         overflowY: "auto",
                         border: "1px solid #ddd",
-                        padding: 15,
+                        padding: window.innerWidth <= 768 ? 10 : 15,
                         borderRadius: 10,
                         marginBottom: 15,
+                        minHeight: 0,
                     }}
                 >
 
@@ -349,15 +452,16 @@ export default function ChatPage() {
                                             background: myMessage
                                                 ? "#DCF8C6"
                                                 : "#F1F0F0",
-                                            padding: "10px 15px",
+                                            padding: "8px 12px",
                                             borderRadius: 10,
-                                            maxWidth: "70%",
+                                            maxWidth: window.innerWidth <= 768 ? "85%" : "70%",
                                             boxShadow:
                                                 "0 1px 3px rgba(0,0,0,.2)",
+                                            wordWrap: "break-word",
                                         }}
                                     >
 
-                                        <strong>
+                                        <strong style={{ fontSize: window.innerWidth <= 768 ? "0.9rem" : "1rem" }}>
                                             {msg.sender}
                                         </strong>
 
@@ -382,6 +486,7 @@ export default function ChatPage() {
                                                             marginLeft: 5,
                                                             color: "#1976d2",
                                                             textDecoration: "none",
+                                                            wordBreak: "break-all",
                                                         }}
                                                     >
                                                         {msg.file_name}
@@ -394,6 +499,8 @@ export default function ChatPage() {
                                                 <p
                                                     style={{
                                                         marginTop: 8,
+                                                        marginBottom: 0,
+                                                        fontSize: window.innerWidth <= 768 ? "0.95rem" : "1rem",
                                                     }}
                                                 >
                                                     {msg.message}
@@ -420,15 +527,18 @@ export default function ChatPage() {
                     style={{
                         display: "flex",
                         gap: 10,
+                        flexWrap: "wrap",
                     }}
                 >
 
                     <input
                         style={{
                             flex: 1,
-                            padding: 12,
+                            padding: "12px 15px",
                             borderRadius: 8,
                             border: "1px solid #ccc",
+                            fontSize: window.innerWidth <= 768 ? "0.95rem" : "1rem",
+                            minWidth: window.innerWidth <= 768 ? "150px" : "200px",
                         }}
                         placeholder="Type message..."
                         value={message}
@@ -451,6 +561,12 @@ export default function ChatPage() {
                         style={{
                             padding: "12px 20px",
                             cursor: "pointer",
+                            background: "#1976d2",
+                            color: "white",
+                            border: "none",
+                            borderRadius: 8,
+                            fontSize: window.innerWidth <= 768 ? "0.95rem" : "1rem",
+                            flex: window.innerWidth <= 768 ? "1" : "0",
                         }}
                     >
                         Send
@@ -464,6 +580,23 @@ export default function ChatPage() {
 
             </div>
 
+            {/* Users Overlay (Mobile) */}
+
+            {isUsersOpen && window.innerWidth <= 768 && (
+                <div
+                    onClick={() => setIsUsersOpen(false)}
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        zIndex: 998,
+                    }}
+                />
+            )}
+
             {/* Online Users */}
 
             <div
@@ -471,10 +604,19 @@ export default function ChatPage() {
                     width: 250,
                     borderLeft: "1px solid #ddd",
                     padding: 20,
+                    backgroundColor: "white",
+                    position: window.innerWidth <= 768 ? "fixed" : "relative",
+                    right: window.innerWidth <= 768 ? (isUsersOpen ? 0 : "-300px") : 0,
+                    top: 0,
+                    bottom: 0,
+                    zIndex: 999,
+                    transition: "right 0.3s ease",
+                    overflowY: "auto",
+                    boxShadow: window.innerWidth <= 768 ? "-2px 0 10px rgba(0,0,0,0.1)" : "none",
                 }}
             >
 
-                <h3>
+                <h3 style={{ marginTop: window.innerWidth <= 768 ? 50 : 0 }}>
                     Online Users
                 </h3>
 
@@ -489,7 +631,7 @@ export default function ChatPage() {
 
                         onlineUsers.map((user) => (
 
-                            <p key={user.user}>
+                            <p key={user.user} style={{ fontSize: window.innerWidth <= 768 ? "0.95rem" : "1rem" }}>
 
                                 {
                                     user.status === "online"
@@ -506,7 +648,7 @@ export default function ChatPage() {
                         ))
                 }
 
-                <hr />
+                <hr style={{ margin: "20px 0" }} />
 
                 <NotificationBell />
 
